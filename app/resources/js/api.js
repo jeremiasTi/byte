@@ -12,14 +12,15 @@ export class ApiError extends Error {
 }
 
 async function request(method, url, body) {
+    const isForm = body instanceof FormData;
     const res = await fetch('/api' + url, {
         method,
         headers: {
             Accept: 'application/json',
-            ...(body ? { 'Content-Type': 'application/json' } : {}),
+            ...(body && !isForm ? { 'Content-Type': 'application/json' } : {}),
             ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
         },
-        body: body ? JSON.stringify(body) : undefined,
+        body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
     });
     if (res.status === 204) return null;
     const data = await res.json().catch(() => null);

@@ -21,3 +21,6 @@ os e-mails aparecem em `storage/logs/laravel.log`.
 Cadastro/autenticação · Disciplinas · Tarefas (prazo, prioridade, status, filtros) ·
 Agenda semanal · Lembretes por e-mail · Flashcards (revisão espaçada Leitner) ·
 Sessões de estudo + painel de progresso.
+
+## Importar PDF nos flashcards
+Na tela de um baralho, **Importar PDF** lê cadernos de respostas/gabaritos (ex.: ENEM, `91 A, 92 C…`) ou PDFs com linhas `P:` / `R:`, mostra uma prévia editável e só então cria os cartões. O PDF precisa ter texto selecionável (não escaneado).

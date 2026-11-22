@@ -52,7 +52,7 @@ async function remove(d) {
         </EmptyState>
 
         <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <article v-for="d in decks" :key="d.id" class="card flex flex-col">
+            <article v-for="d in decks" :key="d.id" class="card flex flex-col transition-colors hover:border-brand-500">
                 <div class="flex items-start justify-between gap-2">
                     <div class="min-w-0">
                         <h2 class="truncate text-base font-semibold">{{ d.name }}</h2>

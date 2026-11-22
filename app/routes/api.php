@@ -30,6 +30,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('decks', DeckController::class)->only(['index', 'store', 'show', 'destroy']);
     Route::post('/decks/{deck}/cards', [DeckController::class, 'storeCard']);
+    Route::post('/decks/{deck}/import/preview', [DeckController::class, 'importPreview']);
+    Route::post('/decks/{deck}/cards/bulk', [DeckController::class, 'storeCards']);
     Route::get('/decks/{deck}/review', [DeckController::class, 'review']);
     Route::delete('/cards/{card}', [DeckController::class, 'destroyCard']);
     Route::post('/cards/{card}/answer', [DeckController::class, 'answer']);
