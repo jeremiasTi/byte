@@ -7,6 +7,7 @@ import {
 import { useAuth } from './stores/auth';
 import { useUi } from './stores/ui';
 import Toasts from './components/Toasts.vue';
+import BrandLogo from './components/BrandLogo.vue';
 import TaskForm from './components/TaskForm.vue';
 
 const auth = useAuth();
@@ -53,7 +54,7 @@ async function logout() {
 
     <div v-else class="min-h-screen lg:flex">
         <header class="flex items-center justify-between border-b border-line bg-white px-4 py-2 lg:hidden">
-            <span class="font-display text-lg font-semibold text-shell">Byte</span>
+            <BrandLogo :size="30" />
             <button class="btn-icon" :aria-expanded="menu" aria-label="Abrir menu" @click="menu = !menu">
                 <component :is="menu ? PhX : PhList" :size="22" />
             </button>
@@ -63,13 +64,7 @@ async function logout() {
             :class="menu ? 'block' : 'hidden'"
             class="w-full shrink-0 bg-shell p-4 lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:flex-col"
         >
-            <div class="mb-8 hidden items-center gap-2.5 px-2 lg:flex">
-                <div class="grid size-9 place-items-center rounded-lg bg-white font-display text-lg font-bold text-shell">B</div>
-                <div class="leading-tight">
-                    <span class="block font-display text-xl font-semibold text-white">Byte</span>
-                    <span class="block text-[11px] text-shell-text">Organização dos estudos</span>
-                </div>
-            </div>
+            <div class="mb-8 hidden px-2 lg:block"><BrandLogo dark tagline /></div>
 
             <nav class="space-y-1" aria-label="Principal">
                 <router-link

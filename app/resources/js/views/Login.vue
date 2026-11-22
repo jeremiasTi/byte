@@ -3,6 +3,7 @@ import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { PhCalendarCheck, PhCards, PhChartLineUp } from '@phosphor-icons/vue';
 import { useAuth } from '../stores/auth';
+import BrandLogo from '../components/BrandLogo.vue';
 
 const auth = useAuth();
 const router = useRouter();
@@ -33,10 +34,7 @@ async function submit() {
 <template>
     <div class="grid min-h-screen lg:grid-cols-2">
         <section class="hidden flex-col justify-between bg-shell p-12 text-white lg:flex">
-            <div class="flex items-center gap-2.5">
-                <div class="grid size-9 place-items-center rounded-lg bg-white font-display text-lg font-bold text-shell">B</div>
-                <span class="font-display text-xl font-semibold">Byte</span>
-            </div>
+            <BrandLogo dark :size="40" />
             <div>
                 <h2 class="max-w-md font-display text-4xl font-semibold leading-tight">Estude com rotina, não no desespero.</h2>
                 <ul class="mt-8 space-y-4">
