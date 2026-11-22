@@ -45,7 +45,7 @@ async function submit() {
                     </li>
                 </ul>
             </div>
-            <p class="text-sm text-shell-text">Projeto acadêmico • ADS</p>
+            <div aria-hidden="true"></div>
         </section>
 
         <section class="grid place-items-center p-6">
