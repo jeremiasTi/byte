@@ -6,4 +6,4 @@
 
 **Tom:** acadêmico, sóbrio e confiável; incentiva rotina sem infantilizar. Evitar aparência genérica de "app de IA" (emoji como ícone, roxo/degradê padrão).
 
-**Contexto:** projeto acadêmico de ADS (21/09–18/12/2026). Escopo MVP; dados pessoais mínimos (LGPD).
+**Contexto:** Escopo MVP; dados pessoais mínimos (LGPD).
