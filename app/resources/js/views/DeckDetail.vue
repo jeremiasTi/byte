@@ -19,32 +19,33 @@ const stats = reactive({ right: 0, wrong: 0 });
 
 // ---------- importação de PDF ----------
 const importing = ref(false);
-const dragging = ref(false);
 const parsing = ref(false);
-const preview = ref(null); // { mode, name, cards: [{front, back, keep}] }
-const fileInput = ref(null);
+const preview = ref(null); // { mode, name, missing, cards: [{front, back, keep}] }
+const mainFile = ref(null);
+const keyFile = ref(null);
 const keptCount = computed(() => preview.value?.cards.filter((c) => c.keep).length ?? 0);
+const MODES = { prova: 'Prova + gabarito', gabarito: 'Gabarito', pergunta: 'Perguntas e respostas' };
 
-async function readPdf(file) {
+function pick(target, file) {
     if (!file) return;
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) return ui.toast('Selecione um arquivo PDF.', 'error');
-    if (file.size > 10 * 1024 * 1024) return ui.toast('O PDF deve ter no máximo 10 MB.', 'error');
+    if (file.size > 10 * 1024 * 1024) return ui.toast('Cada PDF deve ter no máximo 10 MB.', 'error');
+    target.value = file;
+}
+async function readPdf() {
+    if (!mainFile.value) return;
     const body = new FormData();
-    body.append('file', file);
+    body.append('file', mainFile.value);
+    if (keyFile.value) body.append('gabarito', keyFile.value);
     parsing.value = true;
     try {
         const res = await api.post(`/decks/${id}/import/preview`, body);
-        preview.value = { mode: res.mode, name: file.name, cards: res.cards.map((c) => ({ ...c, keep: true })) };
+        preview.value = { mode: res.mode, name: mainFile.value.name, missing: res.missing || 0, cards: res.cards.map((c) => ({ ...c, keep: true })) };
     } catch (e) {
         ui.toast(e instanceof ApiError ? e.message : 'Falha ao ler o PDF.', 'error');
     } finally {
         parsing.value = false;
-        if (fileInput.value) fileInput.value.value = '';
     }
-}
-function onDrop(e) {
-    dragging.value = false;
-    readPdf(e.dataTransfer.files[0]);
 }
 async function confirmImport() {
     const cards = preview.value.cards.filter((c) => c.keep && c.front.trim() && c.back.trim()).map(({ front, back }) => ({ front, back }));
@@ -152,7 +153,7 @@ function onKey(e) {
                 >
                     <div>
                         <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-muted">{{ flipped ? 'Resposta' : 'Pergunta' }} • {{ BOX_NAMES[current.box - 1] }}</p>
-                        <p class="font-display text-xl font-medium leading-snug">{{ flipped ? current.back : current.front }}</p>
+                        <p class="whitespace-pre-line font-display font-medium leading-snug" :class="(flipped ? current.back : current.front).length > 220 ? 'text-left text-base' : 'text-xl'">{{ flipped ? current.back : current.front }}</p>
                         <p v-if="!flipped" class="mt-6 text-sm text-muted">Clique ou pressione <kbd class="rounded border border-line bg-white px-1.5">Espaço</kbd> para ver a resposta</p>
                     </div>
                 </div>
@@ -176,41 +177,48 @@ function onKey(e) {
                 <div class="flex items-start justify-between gap-3">
                     <div>
                         <h2 id="imp-title" class="text-lg font-semibold">Importar de um PDF</h2>
-                        <p class="mt-1 text-sm text-muted">Funciona com caderno de respostas/gabarito (ex.: ENEM, no formato <em>91 A, 92 C…</em>) ou com linhas <em>P:</em> e <em>R:</em>. O PDF precisa ter texto selecionável.</p>
+                        <p class="mt-1 text-sm text-muted">Envie a <strong>prova</strong> e o <strong>gabarito</strong> do ENEM: cada questão vira um cartão com o enunciado na frente e a alternativa correta no verso. Também aceita só o gabarito (<em>91 A, 92 C…</em>) ou PDFs com linhas <em>P:</em> e <em>R:</em>. O PDF precisa ter texto selecionável.</p>
                     </div>
                     <button class="btn-icon -mr-2 -mt-2" aria-label="Fechar importação" @click="closeImport"><PhX :size="20" /></button>
                 </div>
 
-                <label
-                    v-if="!preview"
-                    class="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors focus-within:border-brand-600"
-                    :class="dragging ? 'border-brand-600 bg-brand-50' : 'border-slate-300 hover:border-brand-500 hover:bg-brand-50'"
-                    @dragover.prevent="dragging = true" @dragleave="dragging = false" @drop.prevent="onDrop"
-                >
-                    <PhUploadSimple :size="32" weight="duotone" class="text-brand-600" aria-hidden="true" />
-                    <span class="font-semibold">{{ parsing ? 'Lendo o PDF…' : 'Arraste o PDF aqui ou clique para escolher' }}</span>
-                    <span class="text-sm text-muted">Até 10 MB</span>
-                    <input ref="fileInput" type="file" accept="application/pdf,.pdf" class="sr-only" :disabled="parsing" @change="readPdf($event.target.files[0])" />
-                </label>
+                <form v-if="!preview" class="space-y-4" @submit.prevent="readPdf">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-4 py-8 text-center transition-colors focus-within:border-brand-600 hover:border-brand-500 hover:bg-brand-50">
+                            <PhUploadSimple :size="30" weight="duotone" class="text-brand-600" aria-hidden="true" />
+                            <span class="font-semibold">{{ mainFile ? mainFile.name : 'Prova ou PDF de estudo' }}</span>
+                            <span class="text-sm text-muted">{{ mainFile ? 'Clique para trocar' : 'Obrigatório • até 10 MB' }}</span>
+                            <input type="file" accept="application/pdf,.pdf" class="sr-only" @change="pick(mainFile, $event.target.files[0])" />
+                        </label>
+                        <label class="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 px-4 py-8 text-center transition-colors focus-within:border-brand-600 hover:border-brand-500 hover:bg-brand-50">
+                            <PhUploadSimple :size="30" weight="duotone" class="text-gold" aria-hidden="true" />
+                            <span class="font-semibold">{{ keyFile ? keyFile.name : 'Gabarito (opcional)' }}</span>
+                            <span class="text-sm text-muted">{{ keyFile ? 'Clique para trocar' : 'Necessário se a prova não trouxer as respostas' }}</span>
+                            <input type="file" accept="application/pdf,.pdf" class="sr-only" @change="pick(keyFile, $event.target.files[0])" />
+                        </label>
+                    </div>
+                    <div class="flex justify-end"><button class="btn btn-primary" :disabled="!mainFile || parsing">{{ parsing ? 'Lendo…' : 'Ler PDF' }}</button></div>
+                </form>
 
                 <template v-else>
                     <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
                         <p class="flex items-center gap-2">
                             <PhFilePdf :size="18" class="text-brand-600" aria-hidden="true" /><strong class="font-semibold">{{ preview.name }}</strong>
-                            <span class="chip bg-brand-50 text-brand-700">{{ preview.mode === 'gabarito' ? 'Gabarito' : 'Perguntas e respostas' }}</span>
+                            <span class="chip bg-brand-50 text-brand-700">{{ MODES[preview.mode] }}</span>
                         </p>
                         <p class="tabular-nums text-muted">{{ keptCount }} de {{ preview.cards.length }} selecionados</p>
                     </div>
+                    <p v-if="preview.mode === 'prova' && preview.missing" class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{{ preview.missing }} questão(ões) ficaram de fora por não terem resposta no gabarito (confira se ele é da mesma cor de caderno da prova). Questões com imagem ou gráfico perdem esse conteúdo: revise o texto abaixo.</p>
                     <p v-if="preview.mode === 'gabarito'" class="rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-700">Dica: edite a frente de cada cartão para incluir o tema da questão (ex.: “Questão 91 — Genética”).</p>
                     <ul class="max-h-96 space-y-2 overflow-y-auto pr-1">
-                        <li v-for="(c, i) in preview.cards" :key="i" class="flex items-center gap-2 rounded-lg border border-line p-2" :class="{ 'opacity-50': !c.keep }">
-                            <input v-model="c.keep" type="checkbox" class="size-5 shrink-0" :aria-label="`Importar cartão ${i + 1}`" />
-                            <input v-model="c.front" class="input !min-h-10" :aria-label="`Frente do cartão ${i + 1}`" maxlength="1000" />
-                            <input v-model="c.back" class="input !min-h-10" :aria-label="`Verso do cartão ${i + 1}`" maxlength="2000" />
+                        <li v-for="(c, i) in preview.cards" :key="i" class="flex items-start gap-2 rounded-lg border border-line p-2" :class="{ 'opacity-50': !c.keep }">
+                            <input v-model="c.keep" type="checkbox" class="mt-2.5 size-5 shrink-0" :aria-label="`Importar cartão ${i + 1}`" />
+                            <textarea v-model="c.front" class="input !min-h-10" :rows="preview.mode === 'prova' ? 5 : 1" :aria-label="`Frente do cartão ${i + 1}`" maxlength="4000" />
+                            <textarea v-model="c.back" class="input !min-h-10" :rows="preview.mode === 'prova' ? 5 : 1" :aria-label="`Verso do cartão ${i + 1}`" maxlength="2000" />
                         </li>
                     </ul>
                     <div class="flex flex-wrap justify-end gap-2 border-t border-line pt-4">
-                        <button class="btn btn-ghost" @click="preview = null">Escolher outro PDF</button>
+                        <button class="btn btn-ghost" @click="preview = null">Escolher outros PDFs</button>
                         <button class="btn btn-primary" :disabled="!keptCount" @click="confirmImport">Importar {{ keptCount }} cartões</button>
                     </div>
                 </template>
@@ -228,8 +236,8 @@ function onKey(e) {
             <ul class="space-y-2">
                 <li v-for="c in deck.flashcards" :key="c.id" class="card flex items-center justify-between gap-3 !p-4">
                     <div class="min-w-0">
-                        <p class="font-medium">{{ c.front }}</p>
-                        <p class="text-sm text-muted">{{ c.back }}</p>
+                        <p class="line-clamp-3 whitespace-pre-line font-medium">{{ c.front }}</p>
+                        <p class="line-clamp-2 text-sm text-muted">{{ c.back }}</p>
                     </div>
                     <div class="flex shrink-0 items-center gap-1">
                         <span class="chip bg-brand-50 text-brand-700">{{ BOX_NAMES[c.box - 1] }}</span>

@@ -54,6 +54,35 @@ class PdfImportTest extends TestCase
         $this->assertSame(3, $deck->flashcards()->count());
     }
 
+    public function test_prova_with_gabarito_builds_cards_with_statement(): void
+    {
+        $user = User::factory()->create();
+        $deck = $user->decks()->create(['name' => 'ENEM']);
+        $prova = $this->pdf([
+            'QUESTAO 91', 'Qual organela produz energia para a celula nos seres vivos eucariontes?',
+            'A nucleo', 'B mitocondria', 'C ribossomo',
+            'QUESTAO 92', 'Qual gas e consumido na fotossintese pelas plantas verdes em geral?',
+            'A oxigenio', 'B nitrogenio', 'C gas carbonico',
+            'QUESTAO 93', 'Qual o principal componente da parede celular das plantas em geral?',
+            'A celulose', 'B quitina', 'C lipidio',
+        ]);
+
+        $res = $this->actingAs($user)->postJson("/api/decks/{$deck->id}/import/preview", ['file' => $prova, 'gabarito' => $this->pdf(['91 B 92 C 93 A'])]);
+        $res->assertOk()->assertJsonPath('mode', 'prova')->assertJsonCount(3, 'cards');
+        $this->assertStringContainsString('organela', $res->json('cards.0.front'));
+        $this->assertStringContainsString('Alternativa B', $res->json('cards.0.back'));
+        $this->assertStringContainsString('mitocondria', $res->json('cards.0.back'));
+    }
+
+    public function test_prova_without_gabarito_is_rejected(): void
+    {
+        $user = User::factory()->create();
+        $deck = $user->decks()->create(['name' => 'ENEM']);
+        $prova = $this->pdf(['QUESTAO 91', 'Enunciado longo da primeira questao aqui', 'QUESTAO 92', 'Enunciado longo da segunda questao aqui', 'QUESTAO 93', 'Enunciado longo da terceira questao aqui']);
+
+        $this->actingAs($user)->postJson("/api/decks/{$deck->id}/import/preview", ['file' => $prova])->assertStatus(422);
+    }
+
     public function test_other_users_deck_is_not_accessible(): void
     {
         $deck = User::factory()->create()->decks()->create(['name' => 'X']);

@@ -8,6 +8,8 @@ use App\Models\Flashcard;
 use App\Services\PdfCardExtractor;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use DomainException;
+use Throwable;
 
 class DeckController extends Controller
 {
@@ -61,10 +63,12 @@ class DeckController extends Controller
     public function importPreview(Request $r, Deck $deck, PdfCardExtractor $extractor)
     {
         $this->own($r, $deck);
-        $r->validate(['file' => 'required|file|mimes:pdf|max:10240']);
+        $r->validate(['file' => 'required|file|mimes:pdf|max:10240', 'gabarito' => 'nullable|file|mimes:pdf|max:10240']);
 
         try {
-            $result = $extractor->extract($r->file('file')->getRealPath());
+            $result = $extractor->extract($r->file('file')->getRealPath(), $r->file('gabarito')?->getRealPath());
+        } catch (DomainException $e) {
+            abort(422, $e->getMessage());
         } catch (Throwable) {
             abort(422, 'Não foi possível ler este PDF. Ele pode estar protegido ou ser apenas imagem escaneada.');
         }
@@ -78,7 +82,7 @@ class DeckController extends Controller
     {
         $data = $r->validate([
             'cards' => 'required|array|min:1|max:'.PdfCardExtractor::MAX_CARDS,
-            'cards.*.front' => 'required|string|max:1000',
+            'cards.*.front' => 'required|string|max:'.PdfCardExtractor::MAX_FRONT,
             'cards.*.back' => 'required|string|max:2000',
         ]);
         $this->own($r, $deck);

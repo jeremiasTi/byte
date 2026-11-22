@@ -23,4 +23,4 @@ Agenda semanal · Lembretes por e-mail · Flashcards (revisão espaçada Leitner
 Sessões de estudo + painel de progresso.
 
 ## Importar PDF nos flashcards
-Na tela de um baralho, **Importar PDF** lê cadernos de respostas/gabaritos (ex.: ENEM, `91 A, 92 C…`) ou PDFs com linhas `P:` / `R:`, mostra uma prévia editável e só então cria os cartões. O PDF precisa ter texto selecionável (não escaneado).
+Na tela de um baralho, **Importar PDF** aceita a **prova + o gabarito** (cada questão vira um cartão: enunciado na frente, alternativa correta no verso), só o gabarito (ex.: ENEM, `91 A, 92 C…`) ou PDFs com linhas `P:` / `R:`, mostra uma prévia editável e só então cria os cartões. O PDF precisa ter texto selecionável (não escaneado).
